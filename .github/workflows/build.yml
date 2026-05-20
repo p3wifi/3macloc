@@ -1,0 +1,160 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions: write-all
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            name: linux
+          - os: windows-latest
+            name: windows
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install dependencies (Linux)
+      if: matrix.name == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ libcurl4-openssl-dev zlib1g-dev make autoconf libtool libasio-dev xxd
+
+    - name: Build dynamic binary (Linux)
+      if: matrix.name == 'linux'
+      run: |
+        make -j`nproc`
+        mv 3macloc 3macloc_dynamic
+
+    - name: Build static libraries (Linux)
+      if: matrix.name == 'linux'
+      run: |
+        sudo apt-get install -y libssl-dev
+
+        curl -L https://curl.se/download/curl-8.18.0.tar.gz | tar zx
+        cd curl-8.18.0
+        ./configure \
+          --disable-shared \
+          --enable-static \
+          --with-openssl \
+          --without-libssh2 \
+          --without-nghttp2 \
+          --without-zstd \
+          --without-brotli \
+          --without-librtmp \
+          --disable-ldap \
+          --disable-ftp \
+          --disable-telnet \
+          --disable-gopher \
+          --disable-dict \
+          --disable-imap \
+          --disable-pop3 \
+          --disable-rtsp \
+          --disable-smtp \
+          --disable-tftp \
+          --without-libpsl \
+          --without-libidn2
+        make -j$(nproc)
+        sudo make install
+        sudo ldconfig
+
+    - name: Build static binary (Linux)
+      if: matrix.name == 'linux'
+      run: |
+        make -j`nproc` LDFLAGS="-static -static-libstdc++ /usr/local/lib/libcurl.a /usr/lib/x86_64-linux-gnu/libz.a -lssl -lcrypto -ldl -lpthread"
+        mv 3macloc 3macloc_static
+
+    - name: Setup MSYS2 (Windows)
+      if: matrix.name == 'windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >
+          base-devel
+          git
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-curl-winssl
+          mingw-w64-x86_64-zlib
+          mingw-w64-x86_64-asio
+          mingw-w64-x86_64-openssl
+          vim
+          gzip
+
+    - name: Build static binary (Windows)
+      if: matrix.name == 'windows'
+      shell: msys2 {0}
+      run: |
+        make -j$(nproc)
+        mv 3macloc.exe 3macloc_windows.exe
+
+    - name: Upload Linux artifacts
+      if: matrix.name == 'linux'
+      uses: actions/upload-artifact@v6
+      with:
+        name: binaries-linux
+        path: |
+          3macloc_dynamic
+          3macloc_static
+
+    - name: Upload Windows artifacts
+      if: matrix.name == 'windows'
+      uses: actions/upload-artifact@v6
+      with:
+        name: binaries-windows
+        path: |
+          3macloc_windows.exe
+
+  release:
+    needs: build
+    permissions: write-all
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v6
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Linux Dynamic
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: binaries-linux/3macloc_dynamic
+        asset_name: 3macloc_linux_dynamic
+        asset_content_type: application/octet-stream
+
+    - name: Upload Linux Static
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: binaries-linux/3macloc_static
+        asset_name: 3macloc_linux_static
+        asset_content_type: application/octet-stream
+
+    - name: Upload Windows Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: binaries-windows/3macloc_windows.exe
+        asset_name: 3macloc_windows.exe
+        asset_content_type: application/octet-stream

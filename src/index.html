@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3macloc</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #1a202c;
+        }
+
+        .subtitle {
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .collapse-toggle {
+            background: none;
+            border: none;
+            color: #48bb78;
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-weight: 600;
+            width: auto;
+        }
+
+        .collapse-toggle:hover {
+            background: #f0fff4;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .providers-container {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .providers-container.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        #bssid {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #bssid:focus {
+            outline: none;
+            border-color: #48bb78;
+        }
+
+        .providers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        
+        .providers-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .providers-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .providers-grid::-webkit-scrollbar-thumb {
+            background: #48bb78;
+            border-radius: 3px;
+        }
+        
+        .providers-grid::-webkit-scrollbar-thumb:hover {
+            background: #38a169;
+        }
+
+        .provider-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none; /* Add this to prevent text selection when clicking */
+        }
+
+        .provider-item:hover {
+            border-color: #cbd5e0;
+            transform: translateY(-1px);
+        }
+
+        .provider-item.selected {
+            background: #f0fff4;
+            border-color: #48bb78;
+        }
+
+        .provider-item.disabled {
+            opacity: 0.6;
+            background: #f7fafc;
+            cursor: not-allowed; /* Add this for disabled items */
+        }
+
+        .provider-item.disabled:hover {
+            transform: none;
+            border-color: #e2e8f0;
+        }
+
+        .provider-item input[type="checkbox"] {
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #48bb78;
+            pointer-events: none; /* Add this to delegate clicks to parent */
+        }
+
+        .provider-badge {
+            display: inline-block;
+            cursor: help;
+            position: relative;
+        }
+
+        .provider-badge:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d3748;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .provider-badge:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #2d3748;
+            margin-bottom: -5px;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-item input[type="checkbox"] {
+            accent-color: #48bb78;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px 28px;
+            background: white;
+            color: #2d3748;
+            border: 2px solid #48bb78;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #48bb78;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            background: #f7fafc;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #cbd5e0;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .result-item.found {
+            border-left-color: #48bb78;
+        }
+
+        .result-item.not-found {
+            border-left-color: #ef4444;
+            grid-template-columns: 1fr;
+        }
+
+        .result-item.reserror {
+            border-left-color: #ecc94b;
+            grid-template-columns: 1fr;
+        }
+
+        .result-content {
+            min-width: 0;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .provider-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #2d3748;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-badge.found {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-badge.not-found {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-badge.reserror {
+            background: #fefcbf;
+            color: #744210;
+        }
+
+        .location-info {
+            margin-top: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .location-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.95em;
+        }
+
+        .location-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .map-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #48bb78;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9em;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .map-link:hover {
+            text-decoration: underline;
+        }
+
+        .map-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .map-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            background: white;
+            border: 2px solid #48bb78;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 180px;
+        }
+
+        .map-dropdown.show {
+            display: block;
+        }
+
+        .map-dropdown a {
+            display: block;
+            padding: 10px 16px;
+            color: #2d3748;
+            text-decoration: none;
+            transition: background 0.2s;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .map-dropdown a:last-child {
+            border-bottom: none;
+        }
+
+        .map-dropdown a:hover {
+            background: #f0fff4;
+            color: #48bb78;
+        }
+
+        .map-dropdown a:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+
+        .map-dropdown a:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+
+        .map-preview {
+            width: 200px;
+            height: 150px;
+            border-radius: 8px;
+            border: 2px solid #48bb78;
+            background: #f7fafc;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .map-preview img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #718096;
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #48bb78;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            border-left: 4px solid #c53030;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .hint {
+            font-size: 0.9em;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .providers-grid {
+                grid-template-columns: 1fr;
+                max-height: 300px;
+            }
+
+            .result-item.found {
+                grid-template-columns: 1fr;
+            }
+
+            .map-preview {
+                width: 100%;
+                height: 200px;
+                margin-top: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>3macloc</h1>
+        </header>
+
+        <div class="card">
+            <div class="error" id="error"></div>
+
+            <div class="form-group">
+                <label for="bssid">BSSID (Access Point MAC Address)</label>
+                <input type="text" id="bssid" placeholder="00:11:22:33:44:55" value="">
+            </div>
+
+            <div class="form-group">
+                <div class="form-group-header">
+                    <label>Select Providers</label>
+                    <button type="button" class="collapse-toggle" onclick="toggleProviders()" id="providerToggle">
+                        Hide ▲
+                    </button>
+                </div>
+                <div class="providers-container" id="providersContainer">
+                    <div class="providers-grid" id="providers"></div>
+                </div>
+            </div>
+
+            <div class="options">
+                <div class="option-item">
+                    <input type="checkbox" id="singlethread">
+                    <label for="singlethread" style="margin: 0; cursor: pointer;">Sequential mode</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="zoomToggle">
+                    <label for="zoomToggle" style="margin: 0; cursor: pointer;">Zoom out</label>
+                </div>
+                <div class="option-item">
+                    <label for="timeout" style="margin: 0;">Timeout (sec):</label>
+                    <input type="number" id="timeout" min="0" max="60" value="10" style="width: 60px; padding: 4px 8px; border: 2px solid #e2e8f0; border-radius: 6px;">
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="sortResults" checked>
+                    <label for="sortResults" style="margin: 0; cursor: pointer;">Sort by status</label>
+                </div>
+            </div>
+
+            <button id="searchBtn" onclick="geolocate()">Find Location</button>
+        </div>
+
+        <div class="card results" id="results">
+            <h2 style="margin-bottom: 20px; color: #2d3748;">Results</h2>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let providers = [];
+        let selectedProviders = new Set();
+        let providersVisible = true;
+        let mapZoom = 16;
+
+        function toggleProviders() {
+            const container = document.getElementById('providersContainer');
+            const toggle = document.getElementById('providerToggle');
+            
+            providersVisible = !providersVisible;
+            
+            if (providersVisible) {
+                container.classList.remove('collapsed');
+                toggle.textContent = 'Hide ▲';
+            } else {
+                container.classList.add('collapsed');
+                toggle.textContent = 'Show ▼';
+            }
+        }
+
+        async function loadProviders() {
+            try {
+                const response = await fetch('/providers');
+                const data = await response.json();
+                providers = data.providers;
+                
+                const container = document.getElementById('providers');
+                container.innerHTML = '';
+                
+                providers.forEach(provider => {
+                    const isDisabled = provider.disabled === true;
+                    const div = document.createElement('div');
+                    div.className = 'provider-item' + (isDisabled ? ' disabled' : '');
+                    
+                    const publicBadge = provider.public 
+                        ? `<span class="provider-badge" data-tooltip="Works without API key">🌐</span>` 
+                        : '';
+                    
+                    div.innerHTML = `
+                        <input type="checkbox" id="prov_${provider.id}" value="${provider.id}">
+                        <label for="prov_${provider.id}" style="margin: 0; cursor: pointer; flex: 1;">
+                            ${provider.name} ${publicBadge}
+                        </label>
+                    `;
+                    
+                    div.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('provider-badge')) {
+                            return;
+                        }
+                        
+                        if (isDisabled) {
+                            return;
+                        }
+                        
+                        if (e.target.tagName === 'LABEL') {
+                            e.stopPropagation();
+                        }
+                        
+                        const checkbox = div.querySelector('input');
+                        if (checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            toggleProvider(provider.id, checkbox.checked);
+                        }
+                    });
+                    
+                    const checkbox = div.querySelector('input');
+                    checkbox.onchange = (e) => {
+                        e.stopPropagation();
+                        toggleProvider(provider.id, e.target.checked);
+                    };
+                    
+                    container.appendChild(div);
+                    
+                    if (!isDisabled) {
+                        checkbox.checked = true;
+                        selectedProviders.add(provider.id);
+                        div.classList.add('selected');
+                    }
+                });
+            } catch (error) {
+                showError('Error loading providers: ' + error.message);
+            }
+        }
+
+        function toggleProvider(id, selected) {
+            const item = document.querySelector(`#prov_${id}`).closest('.provider-item');
+            if (selected) {
+                selectedProviders.add(id);
+                item.classList.add('selected');
+            } else {
+                selectedProviders.delete(id);
+                item.classList.remove('selected');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        const MAPBOX_TOKEN = 'pk.eyJ1IjoiYmFiYnN1YmVyIiwiYSI6ImNrdThqeGkxZTVwb3kyd3BpZGRlc2NlOXUifQ.qh-EtXm2DJQZVprWUJ-GFQ'; // thx uber
+        
+        function createStaticMap(lat, lon, containerId) {
+            const container = document.getElementById(containerId);
+            const zoomToggle = document.getElementById('zoomToggle');
+            const zoom = zoomToggle && zoomToggle.checked ? 11 : 16;
+            const width = 350;
+            const height = 350;
+            
+            const markerColor = '48bb78';
+            
+            const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-s+${markerColor}(${lon},${lat})/${lon},${lat},${zoom}/${width}x${height}@2x?attribution=false&logo=false&access_token=${MAPBOX_TOKEN}`;
+            
+            const img = document.createElement('img');
+            img.src = mapboxUrl;
+            img.alt = 'Map';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            
+            img.onerror = function() {
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #718096; font-size: 12px; text-align: center; padding: 10px;">
+                        Map unavailable
+                    </div>
+                `;
+            };
+            
+            container.innerHTML = '';
+            container.appendChild(img);
+            
+            container.dataset.lat = lat;
+            container.dataset.lon = lon;
+            container.dataset.zoom = zoom;
+        }
+        
+        function updateAllMaps() {
+            const mapContainers = document.querySelectorAll('.map-preview[data-lat][data-lon]');
+            
+            mapContainers.forEach(container => {
+                const lat = container.dataset.lat;
+                const lon = container.dataset.lon;
+                if (lat && lon) {
+                    const zoomToggle = document.getElementById('zoomToggle');
+                    const zoom = zoomToggle && zoomToggle.checked ? 11 : 16;
+                    const width = 350;
+                    const height = 350;
+                    const markerColor = '48bb78';
+                    
+                    const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-s+${markerColor}(${lon},${lat})/${lon},${lat},${zoom}/${width}x${height}@2x?attribution=false&logo=false&access_token=${MAPBOX_TOKEN}`;
+                    
+                    const img = container.querySelector('img');
+                    if (img) {
+                        img.src = mapboxUrl;
+                    }
+                    
+                    container.dataset.zoom = zoom;
+                }
+            });
+        }
+
+        async function geolocate() {
+            const bssid = document.getElementById('bssid').value.trim();
+            const singlethread = document.getElementById('singlethread').checked;
+            const timeout = parseInt(document.getElementById('timeout').value);
+            
+            if (!bssid) {
+                showError('Enter BSSID');
+                return;
+            }
+            
+            if (selectedProviders.size === 0) {
+                showError('Select at least one provider');
+                return;
+            }
+            
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            const resultsDiv = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top: 12px;">Querying providers...</p></div>';
+            resultsDiv.classList.add('show');
+            
+            try {
+                const response = await fetch('/geolocate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bssid: bssid,
+                        providers: Array.from(selectedProviders),
+                        singlethread: singlethread,
+                        timeout: timeout
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Request error: ' + response.status);
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError('Error: ' + error.message);
+                resultsContent.innerHTML = '';
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Find Location';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = '';
+            
+            if (data.singlethread) {
+                const notice = document.createElement('div');
+                notice.style.cssText = 'background: #fefcbf; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9em; border-left: 4px solid #d69e2e;';
+                notice.textContent = '⚡ Single-threaded mode';
+                resultsContent.appendChild(notice);
+            }
+            
+            let resultsArray = Object.entries(data.results);
+
+            // Сортировка: Found (1) -> Not Found (2) -> Error (3)
+            if (document.getElementById('sortResults').checked) {
+                resultsArray.sort((a, b) => {
+                    const getPriority = (res) => {
+                        if (res.found) return 1;
+                        if (res.error) return 3;
+                        return 2;
+                    };
+                    return getPriority(a[1]) - getPriority(b[1]);
+                });
+            }
+            
+            for (const [provId, result] of resultsArray) {
+                const provider = providers.find(p => p.id == provId);
+                if (!provider) continue;
+                
+                const resultDiv = document.createElement('div');
+                
+                // Определяем тип и класс
+                let statusClass = 'not-found';
+                let statusText = '✗ Not Found';
+                
+                if (result.found) {
+                    statusClass = 'found';
+                    statusText = '✓ Found';
+                } else if (result.error) {
+                    statusClass = 'reserror';
+                    statusText = '⚠️ Error';
+                }
+
+                resultDiv.className = `result-item ${statusClass}`;
+                
+                let html = `
+                    <div class="result-content">
+                        <div class="result-header">
+                            <div class="provider-name">${provider.name}</div>
+                            <div class="status-badge ${statusClass}">
+                                ${statusText}
+                            </div>
+                        </div>
+                `;
+                
+                if (result.found && result.location) {
+                    const mapId = `map_${provId}_${Date.now()}`;
+                    const lat = result.location.lat;
+                    const lon = result.location.lon;
+                    
+                    html += `
+                        <div class="location-info">
+                            <div class="location-row">
+                                <span><strong>Latitude:</strong></span>
+                                <span>${lat.toFixed(6)}</span>
+                            </div>
+                            <div class="location-row">
+                                <span><strong>Longitude:</strong></span>
+                                <span>${lon.toFixed(6)}</span>
+                            </div>
+                            <div class="map-selector">
+                                <span class="map-link map-trigger">📍 Open on map ▼</span>
+                                <div class="map-dropdown">
+                                    <a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=15" target="_blank">OpenStreetMap</a>
+                                    <a href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">Google Maps</a>
+                                    <a href="https://yandex.ru/maps/?ll=${lon},${lat}&z=15&pt=${lon},${lat}" target="_blank">Yandex Maps</a>
+                                    <a href="https://maps.apple.com/?ll=${lat},${lon}&q=${lat},${lon}" target="_blank">Apple Maps</a>
+                                    <a href="https://www.bing.com/maps?cp=${lat}~${lon}&lvl=15" target="_blank">Bing Maps</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="map-preview" id="${mapId}">
+                        <div class="map-loading">Loading map...</div>
+                    </div>
+                    `;
+                    
+                    resultDiv.innerHTML = html;
+                    resultsContent.appendChild(resultDiv);
+                    setTimeout(() => createStaticMap(lat, lon, mapId), 100);
+                } else if (result.error) {
+                    html += `
+                        <div class="location-info" style="border-color: #ecc94b; background: #fffaf0;">
+                            <div class="location-row" style="color: #744210;">
+                                <span><strong>Message:</strong></span>
+                                <span>${result.error} ${result.error_code !== undefined ? `(Code: ${result.error_code})` : ''}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                    resultDiv.innerHTML = html;
+                    resultsContent.appendChild(resultDiv);
+                } else {
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                    resultsContent.appendChild(resultDiv);
+                }
+            }
+            initMapDropdowns();
+        }
+        
+        function initMapDropdowns() {
+            let hideTimer;
+            
+            document.querySelectorAll('.map-selector').forEach(selector => {
+                const trigger = selector.querySelector('.map-trigger');
+                const dropdown = selector.querySelector('.map-dropdown');
+                
+                if (!trigger || !dropdown) return;
+                
+                const showDropdown = () => {
+                    clearTimeout(hideTimer);
+                    dropdown.classList.add('show');
+                };
+                
+                const hideDropdown = () => {
+                    hideTimer = setTimeout(() => {
+                        dropdown.classList.remove('show');
+                    }, 200);
+                };
+                
+                trigger.addEventListener('mouseenter', showDropdown);
+                trigger.addEventListener('mouseleave', hideDropdown);
+                dropdown.addEventListener('mouseenter', showDropdown);
+                dropdown.addEventListener('mouseleave', hideDropdown);
+            });
+        }
+
+        loadProviders();
+
+        document.getElementById('bssid').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') geolocate();
+        });
+        
+        document.getElementById('zoomToggle').addEventListener('change', updateAllMaps);
+    </script>
+</body>
+</html>
