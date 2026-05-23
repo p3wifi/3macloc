@@ -132,4 +132,12 @@ Response curl_request_post(const char* request_url, uint8_t* request_data, size_
 
 Response curl_request_post(const char* request_url, uint8_t* request_data, size_t request_data_length, std::vector<const char*> headers, int retries);
 
+void pb_write_varint(std::vector<uint8_t>& out, uint64_t v);
+
+void pb_write_key(std::vector<uint8_t>& out, uint32_t field, uint32_t wireType);
+
+void pb_write_varint(std::vector<uint8_t>& out, uint32_t field, uint64_t value);
+
+void pb_write_bytes(std::vector<uint8_t>& out, uint32_t field, const std::vector<uint8_t>& data);
+
 } // namespace utils

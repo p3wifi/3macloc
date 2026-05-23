@@ -352,6 +352,11 @@ int main(int argc, char** argv) {
 			if (!x) return crow::response(400);
 			if(!x.has("bssids")) return crow::response(400);
 			if(x["bssids"].t() != crow::json::type::List) return crow::response(400);
+			int provider = 3; // apple
+			if(x.has("provider")) {
+				if(x["provider"].t() != crow::json::type::Number) return crow::response(400);
+				provider = x["provider"].i();
+			}
 			std::vector<uint64_t> bssids(x["bssids"].lo().size());
 			int bi = 0;
 			for(auto bssid : x["bssids"]) {
@@ -364,7 +369,11 @@ int main(int argc, char** argv) {
 				utils::proxy = x["proxy"].s();
 			}
 			
-			std::vector<Location> locations = apple_loc::get_location_multi(bssids, false);
+			std::vector<Location> locations;
+			if(provider == 0) locations = google_loc::get_location_multi(bssids);
+			else if(provider == 2) locations = apple_loc::get_location_multi(bssids, false);
+			else if(provider == 3) locations = apple_loc::get_location_multi(bssids, true);
+
 			utils::proxy.clear();
 			auto entry = crow::json::wvalue::object();
 			for(Location loc : locations) {
