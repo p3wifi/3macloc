@@ -352,7 +352,7 @@ int main(int argc, char** argv) {
 			if (!x) return crow::response(400);
 			if(!x.has("bssids")) return crow::response(400);
 			if(x["bssids"].t() != crow::json::type::List) return crow::response(400);
-			int provider = 3; // apple
+			int provider = 2; // apple
 			if(x.has("provider")) {
 				if(x["provider"].t() != crow::json::type::Number) return crow::response(400);
 				provider = x["provider"].i();

@@ -2,6 +2,8 @@
 
 namespace google_loc {
 
+// https://media.blackhat.com/eu-13/briefings/Jeske/bh-eu-13-floating-car-data-jeske-wp.pdf
+
 uint8_t data1[] = {
     0x0A, 0x66, 0x0A, 0x04, 0x32, 0x30, 0x32, 0x31, 0x12, 0x57, 0x61, 0x6E, 0x64, 0x72, 0x6F, 0x69,
     0x64, 0x2F, 0x4C, 0x45, 0x41, 0x47, 0x4F, 0x4F, 0x2F, 0x66, 0x75, 0x6C, 0x6C, 0x5F, 0x77, 0x66,
@@ -33,7 +35,7 @@ void insert_mac(uint8_t* buf, int pos, uint64_t input) {
     buf[i+pos] = input;
 }
 
-uint8_t* constructData2(const uint8_t* data, size_t len, size_t& out_len) {
+uint8_t* construct_masf_header(const uint8_t* data, size_t len, size_t& out_len) {
     uint8_t *buf = new uint8_t[1024];
 	int pos = sizeof(data2_1);
     memcpy(buf, data2_1, sizeof(data2_1));
@@ -81,7 +83,7 @@ Location get_location(uint64_t bssid) {
     size_t comp_data1_len;
     uint8_t* comp_data1 = utils::zlib_compress(data1, sizeof(data1), comp_data1_len);
     size_t data2_len;
-    uint8_t* data2 = constructData2(comp_data1, comp_data1_len, data2_len);
+    uint8_t* data2 = construct_masf_header(comp_data1, comp_data1_len, data2_len);
     delete[] comp_data1;
 
     std::vector<const char*> headers = {
@@ -148,7 +150,7 @@ std::vector<Location> get_location_multi(std::vector<uint64_t> bssids) {
 	size_t comp_data1_len;
     uint8_t* comp_data1 = utils::zlib_compress(data1.data(), data1.size(), comp_data1_len);
     size_t data2_len;
-    uint8_t* data2 = constructData2(comp_data1, comp_data1_len, data2_len);
+    uint8_t* data2 = construct_masf_header(comp_data1, comp_data1_len, data2_len);
     delete[] comp_data1;
 
 	utils::Response resp = utils::curl_request_post(
