@@ -184,8 +184,8 @@ std::vector<Location> get_location_multi(std::vector<uint64_t> bssids) {
 			empty.sourceBssid = resp_bssid;
 			result.push_back(empty);
 		} else {
-			int64_t lat = network_loc[0]->GetMessage(1)->GetUInt32(1);
-			int64_t lon = network_loc[0]->GetMessage(1)->GetUInt32(2);
+			int32_t lat = network_loc[0]->GetMessage(1)->GetUInt32(1);
+			int32_t lon = network_loc[0]->GetMessage(1)->GetUInt32(2);
 			result.push_back(Location(lat / 10000000.0, lon / 10000000.0, resp_bssid));
 		}
     }
